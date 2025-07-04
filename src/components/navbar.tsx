@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
+import ModeToggle from "./mode-toggle";
 
 const Navbar = async () => {
   const session = await getServerSession(authOptions);
@@ -21,7 +22,8 @@ const Navbar = async () => {
             Memoriva
           </Link>
         </NavigationMenuItem>
-        <span className="flex items-center gap-1 lg:gap-2 gap-x-2 lg:gap-x-4">
+        <span className="flex items-center gap-1 lg:gap-2 gap-x-2 md:gap-x-4">
+          <ModeToggle />
           <NavigationMenuItem>
             <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
               <Link href="/decks">Decks</Link>
@@ -36,7 +38,7 @@ const Navbar = async () => {
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                 <Link href="/api/auth/signin">
-                  <Button>Log in</Button>
+                  Log in
                 </Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
