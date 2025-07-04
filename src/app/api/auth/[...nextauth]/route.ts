@@ -12,7 +12,22 @@ const authOptions = {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     }),
+    // Add credentials provider for email/password login
+    // CredentialsProvider({
+    //   name: "Email",
+    //   credentials: {
+    //     email: { label: "Email", type: "email" },
+    //     password: { label: "Password", type: "password" }
+    //   },
+    //   async authorize(credentials, req) {
+    //     // Add your authentication logic here
+    //     return null
+    //   }
+    // })
   ],
+  pages: {
+    signIn: '/login',
+  },
 };
 
 const handler = NextAuth(authOptions);
