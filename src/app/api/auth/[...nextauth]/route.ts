@@ -1,8 +1,17 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
-import { AuthOptions, User, Account, Profile } from "next-auth";
+import { AuthOptions, User, Account, Profile, Session } from "next-auth";
 import { createUserIfNotExists } from "@/actions/create-user";
+
+interface MySession extends Session {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string;
+  }
+}
 
 const authOptions: AuthOptions = {
   providers: [
@@ -40,13 +49,12 @@ const authOptions: AuthOptions = {
           image: user.image!,
           name: user.name!
         })
-        const id = resp.id
-        user.id = id
+        console.log(resp.id, "has signed in")
         return resp.isAuth
       } else {
         return true;
       }
-    },
+    }
   },
 };
 

@@ -9,10 +9,11 @@ import {
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 import ModeToggle from "./mode-toggle";
+import LogoutButton from "./logout";
 
 const Navbar = async () => {
   const session = await getServerSession(authOptions);
-
+  // console.log(session?.user);
   return (
     <NavigationMenu className="w-screen border-b-[0.5px] border-b-gray-200 dark:border-b-gray-800">
       <NavigationMenuList className="w-screen justify-between gap-2 p-2">
@@ -33,15 +34,15 @@ const Navbar = async () => {
               <Link href="/study">Study</Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
-          {!session?.user ? (
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+          {!session?.user ? (
                 <Link href="/api/auth/signin">
                   Log in
                 </Link>
+                ) : <LogoutButton />}
               </NavigationMenuLink>
             </NavigationMenuItem>
-          ) : null}
         </span>
       </NavigationMenuList>
     </NavigationMenu>
