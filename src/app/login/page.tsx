@@ -1,7 +1,7 @@
-"use client"
+"use client";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import {FaGoogle as Google, FaGithub as Github} from "react-icons/fa"
+import { signIn } from "next-auth/react";
+import { FaGoogle as Google, FaGithub as Github } from "react-icons/fa";
 
 const LoginPage = () => {
   return (
@@ -11,18 +11,14 @@ const LoginPage = () => {
         Log in to access your flashcard decks and start studying.
       </p>
       <div className="flex flex-col space-y-4">
-        <Link href="/api/auth/signin?provider=github">
-          <Button>
-            <Github className="mr-2 h-4 w-4" aria-label="Sign in with Github" />
-            Sign in with GitHub
-          </Button>
-        </Link>
-        <Link href="/api/auth/signin?provider=google">
-          <Button>
-            <Google className="mr-2 h-4 w-4" aria-label="Sign in with Google" />
-            Sign in with Google
-          </Button>
-        </Link>
+        <Button onClick={() => signIn("github")}>
+          <Github className="mr-2 h-4 w-4" aria-label="Sign in with Github" />
+          Sign in with GitHub
+        </Button>
+        <Button onClick={() => signIn("google")}>
+          <Google className="mr-2 h-4 w-4" aria-label="Sign in with Google" />
+          Sign in with Google
+        </Button>
       </div>
     </div>
   );

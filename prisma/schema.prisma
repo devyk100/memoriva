@@ -14,15 +14,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AuthType {
+  google
+  github
+}
+
 model User {
-  id    String  @id @default(uuid())
-  name  String?
-  email String  @unique
+  id               String            @id @default(uuid())
+  name             String?
+  email            String
   userDeckMappings UserDeckMapping[]
 }
 
 model Flashcard {
-  id     String @id @default(uuid())
+  id     String        @id @default(uuid())
   front  String
   back   String
   deckId String
@@ -30,9 +35,9 @@ model Flashcard {
 }
 
 model FlashcardDeck {
-  id              String            @id @default(uuid())
-  name            String
-  flashcards      Flashcard[]
+  id               String            @id @default(uuid())
+  name             String
+  flashcards       Flashcard[]
   userDeckMappings UserDeckMapping[]
 }
 
@@ -42,10 +47,10 @@ enum UserDeckType {
 }
 
 model UserDeckMapping {
-  id     String       @id @default(uuid())
+  id     String        @id @default(uuid())
   userId String
   deckId String
-  user   User         @relation(fields: [userId], references: [id])
+  user   User          @relation(fields: [userId], references: [id])
   deck   FlashcardDeck @relation(fields: [deckId], references: [id])
   type   UserDeckType
 }

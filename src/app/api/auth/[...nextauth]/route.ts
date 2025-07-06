@@ -1,8 +1,9 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
+import { AuthOptions, User, Account, Profile } from "next-auth";
 
-const authOptions = {
+const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -27,6 +28,12 @@ const authOptions = {
   ],
   pages: {
     signIn: '/login',
+  },
+  callbacks: {
+    async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {  
+      
+      return true;
+    },
   },
 };
 
