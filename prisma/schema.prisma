@@ -23,6 +23,8 @@ model User {
   id               String            @id @default(uuid())
   name             String?
   email            String
+  authType         AuthType
+  image            String?
   userDeckMappings UserDeckMapping[]
 }
 

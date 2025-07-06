@@ -1,17 +1,30 @@
-async function createUserIfNotExists({
-    email, name, image
+import { prisma } from "@/lib/prisma";
+
+export async function createUserIfNotExists({
+    email, name, image, authType
 }: {
-    email: String;
-    name: String;
-    image: String;
-}): Promise<Boolean> {
+    email: string;
+    name: string;
+    image: string;
+    authType: "google" | "github"
+}): Promise<{isAuth: boolean, id: string}> {
     "use server"
     try {
-
-
-        return true
+        const resp = await prisma.user.findFirst({where: {
+            email,
+            authType
+        }})
+        if(resp == null) {
+            const temp = await prisma.user.create({
+                data: {
+                    authType, email, image, name
+                }
+            })
+            return {isAuth: true, id: temp.id!}
+        }
+        return {isAuth: true, id: resp?.id!}
     } catch(error) {
-
-        return false
+        console.log(error)
+        return {isAuth: false, id: ""}
     }
 }

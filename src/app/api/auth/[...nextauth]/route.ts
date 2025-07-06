@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import { AuthOptions, User, Account, Profile } from "next-auth";
+import { createUserIfNotExists } from "@/actions/create-user";
 
 const authOptions: AuthOptions = {
   providers: [
@@ -30,9 +31,21 @@ const authOptions: AuthOptions = {
     signIn: '/login',
   },
   callbacks: {
-    async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {  
-      
-      return true;
+    async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {
+      if (account) {
+        const authType = account.provider
+        const resp = await createUserIfNotExists({
+          authType: authType as "google" | "github",
+          email: user.email!,
+          image: user.image!,
+          name: user.name!
+        })
+        const id = resp.id
+        user.id = id
+        return resp.isAuth
+      } else {
+        return true;
+      }
     },
   },
 };
