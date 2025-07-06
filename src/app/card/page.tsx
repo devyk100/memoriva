@@ -1,74 +1,133 @@
 "use client";
 
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getFlashcardsByDeckId } from "@/actions/get-flashcards";
+import { FlashcardViewer } from "@/components/flashcard-viewer";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
 const CardPage = () => {
   const searchParams = useSearchParams();
-  const cardId = searchParams.get("id");
-  const [showBack, setShowBack] = useState(false);
+  const router = useRouter();
+  const deckId = searchParams.get("id");
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+
+  const {
+    data: flashcardData,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ["flashcards", deckId],
+    queryFn: () => getFlashcardsByDeckId(deckId!),
+    enabled: !!deckId,
+  });
+
+  const handleCardComplete = (difficulty: "again" | "hard" | "easy") => {
+    if (!flashcardData?.deck.flashcards) return;
+
+    // Move to next card
+    const nextIndex = currentCardIndex + 1;
+    
+    if (nextIndex >= flashcardData.deck.flashcards.length) {
+      // Reached end of deck
+      setCurrentCardIndex(0); // Reset to first card or handle completion
+    } else {
+      setCurrentCardIndex(nextIndex);
+    }
+  };
+
+  const handleBackToDeck = () => {
+    router.push("/decks");
+  };
+
+  const handleRestart = () => {
+    setCurrentCardIndex(0);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-10 px-4 sm:px-6 min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md p-8">
+          <CardContent className="text-center space-y-4">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Loading flashcards...</h2>
+            <p className="text-muted-foreground">Please wait while we fetch your deck.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !flashcardData) {
+    return (
+      <div className="container mx-auto py-10 px-4 sm:px-6 min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md p-8">
+          <CardContent className="text-center space-y-4">
+            <h2 className="text-xl font-semibold text-destructive">Deck not found</h2>
+            <p className="text-muted-foreground">
+              {!deckId 
+                ? "No deck ID provided in the URL." 
+                : "The requested deck could not be found."}
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={handleBackToDeck} variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Decks
+              </Button>
+              {deckId && (
+                <Button onClick={() => refetch()}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Deck completion state
+  if (currentCardIndex >= flashcardData.deck.flashcards.length) {
+    return (
+      <div className="container mx-auto py-10 px-4 sm:px-6 min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md p-8">
+          <CardContent className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">🎉 Deck Complete!</h2>
+            <p className="text-muted-foreground">
+              You've finished studying all {flashcardData.totalCards} cards in "{flashcardData.deck.name}".
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={handleRestart}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Study Again
+              </Button>
+              <Button onClick={handleBackToDeck} variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Decks
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6 overflow-y-hidden">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-semibold">Card Viewer</h1>
-        <p className="text-gray-500">Card ID: {cardId || "N/A"}</p>
-      </div>
-      <Card className="relative mb-6 w-full max-w-xl mx-auto h-[70vh] flex flex-col">
-        <CardHeader className="shrink-0">
-          <CardTitle>{showBack ? "Back Side" : "Front Side"}</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-y-auto grow">
-            {!showBack ? (
-              <>
-                <p className="mb-4">
-                  What is the capital of France? Here's a bit more context to simulate a longer front side. 
-                  France is a country in Western Europe known for its medieval cities, alpine villages, and Mediterranean beaches. 
-                  Its capital, Paris, is famed for its fashion houses, classical art museums including the Louvre, and monuments like the Eiffel Tower.
-                </p>
-                <div className="w-full aspect-video relative mb-4">
-                  <Image
-                    src="/globe.svg"
-                    alt="Globe"
-                    fill
-                    className="object-contain rounded-md border"
-                  />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 px-4 pt-6 pb-4 bg-gradient-to-t from-background via-background/80 to-transparent flex justify-center">
-                  <Button onClick={() => setShowBack(true)}>Show Answer</Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="mb-4">
-                  The capital of France is Paris. Paris is not only the capital but also the most populous city of France. 
-                  It has been a major center of finance, diplomacy, commerce, fashion, science, and the arts since the 17th century. 
-                  The city is known for its café culture, and landmarks like the Notre-Dame cathedral and the Arc de Triomphe.
-                </p>
-                <div className="w-full aspect-video relative mb-4">
-                  <Image
-                    src="/window.svg"
-                    alt="Window"
-                    fill
-                    className="object-contain rounded-md border"
-                  />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 px-4 pt-6 pb-4 bg-gradient-to-t from-background via-background/80 to-transparent flex justify-center gap-4">
-                  <Button className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">Again</Button>
-                  <Button className="bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">Hard</Button>
-                  <Button className="bg-green-500 text-white hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700">Easy</Button>
-                </div>
-              </>
-            )}
-          </CardContent>
-      </Card>
-    </div>
+    <FlashcardViewer
+      flashcards={flashcardData.deck.flashcards}
+      deckName={flashcardData.deck.name}
+      onCardComplete={handleCardComplete}
+      currentIndex={currentCardIndex}
+      totalCards={flashcardData.totalCards}
+    />
   );
 };
-
 
 export default CardPage;

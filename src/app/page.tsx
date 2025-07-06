@@ -11,6 +11,7 @@ export default function Home() {
         </CardHeader>
         <CardContent>
           <Button>Click me</Button>
+          <Button>Click me</Button>
         </CardContent>
       </Card>
     </div>
