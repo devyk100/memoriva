@@ -387,6 +387,9 @@ async function refillQueue(userId: string, deckId: string): Promise<void> {
 
   if (!deckMetadata) return;
 
+  // Check daily limits
+  const dailyLimits = await SessionManager.checkDailyLimits(userId, deckId);
+
   // Get all cards with SRS metadata
   const cardsWithSRS = await prisma.sRSCardMetadata.findMany({
     where: {
@@ -407,8 +410,12 @@ async function refillQueue(userId: string, deckId: string): Promise<void> {
     nextReview: srs.nextReview,
   }));
 
-  const newCardIds = getNewCards(cardData, deckMetadata.newCardCount);
-  const reviewCardIds = getCardsForReview(cardData, deckMetadata.reviewCardCount);
+  // Apply daily limits
+  const maxNewCards = dailyLimits.canStudyNew ? deckMetadata.newCardCount : 0;
+  const maxReviewCards = dailyLimits.canStudyReview ? deckMetadata.reviewCardCount : 0;
+
+  const newCardIds = getNewCards(cardData, maxNewCards);
+  const reviewCardIds = getCardsForReview(cardData, maxReviewCards);
 
   // Create study queue
   const queueCardIds = createStudyQueue(newCardIds, reviewCardIds, 20);

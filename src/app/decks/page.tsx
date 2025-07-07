@@ -7,6 +7,8 @@ import { BookOpen, Clock, Users, Plus, Edit, Settings } from "lucide-react";
 import Link from "next/link";
 import { NewDeckDialog } from "@/components/new-deck-dialog";
 import { getDeckStats } from "@/actions/update-card-srs";
+import { getDeckSettings } from "@/actions/update-deck-settings";
+import { DeckSettingsDialog } from "@/components/deck-settings-dialog";
 
 interface DeckWithStats {
   id: string;
@@ -17,6 +19,10 @@ interface DeckWithStats {
     dueCards: number;
     futureCards: number;
     studiedToday: number;
+  };
+  settings: {
+    newCardCount: number;
+    reviewCardCount: number;
   };
 }
 
@@ -106,6 +112,12 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
                   Edit
                 </Button>
               </Link>
+              <DeckSettingsDialog
+                deckId={deck.id}
+                deckName={deck.name}
+                currentNewCardCount={deck.settings.newCardCount}
+                currentReviewCardCount={deck.settings.reviewCardCount}
+              />
             </div>
           </CardContent>
         </Card>
@@ -152,10 +164,14 @@ const DecksPage = async () => {
     },
   });
 
-  // Get stats for each deck
+  // Get stats and settings for each deck
   const decksWithStats: DeckWithStats[] = await Promise.all(
     userDecks.map(async (userDeck) => {
-      const statsResult = await getDeckStats(userDeck.deck.id);
+      const [statsResult, settings] = await Promise.all([
+        getDeckStats(userDeck.deck.id),
+        getDeckSettings(userDeck.deck.id),
+      ]);
+      
       return {
         id: userDeck.deck.id,
         name: userDeck.deck.name,
@@ -165,6 +181,10 @@ const DecksPage = async () => {
           dueCards: 0,
           futureCards: 0,
           studiedToday: 0,
+        },
+        settings: settings || {
+          newCardCount: 20,
+          reviewCardCount: 100,
         },
       };
     })

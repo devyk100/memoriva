@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDeckWithSRS, getNextCards } from "@/actions/get-deck-with-srs";
 import { updateCardSRS } from "@/actions/update-card-srs";
@@ -23,7 +23,7 @@ interface StudyCard {
   };
 }
 
-const CardPage = () => {
+const CardPageContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -296,6 +296,23 @@ const CardPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const CardPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-10 px-4 sm:px-6 min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md p-8">
+          <CardContent className="text-center space-y-4">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Loading...</h2>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <CardPageContent />
+    </Suspense>
   );
 };
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { calculateSRSUpdate, SRSGrade } from "@/lib/srs";
+import { SessionManager } from "@/lib/redis";
 
 export interface UpdateCardSRSParams {
   cardId: string;
@@ -84,27 +85,24 @@ export async function updateCardSRS(params: UpdateCardSRSParams): Promise<Update
       },
     });
 
-    // If this was a new card (grade applied), decrement newCardCount
-    if (currentSRS.repetitions === -1) {
-      // Get deck ID from the card
-      const card = await prisma.flashcard.findUnique({
-        where: { id: cardId },
-        select: { deckId: true },
-      });
+    // Track daily limits and card type
+    const card = await prisma.flashcard.findUnique({
+      where: { id: cardId },
+      select: { deckId: true },
+    });
 
-      if (card) {
-        // Update deck metadata to decrement newCardCount
-        await prisma.deckMetadata.updateMany({
-          where: {
-            userId: user.id,
-            deckId: card.deckId,
-          },
-          data: {
-            newCardCount: {
-              decrement: 1,
-            },
-          },
-        });
+    if (card) {
+      // Increment daily limits in Redis
+      try {
+        if (currentSRS.repetitions === -1) {
+          // This was a new card
+          await SessionManager.incrementDailyLimits(user.id, card.deckId, 'new');
+        } else {
+          // This was a review card
+          await SessionManager.incrementDailyLimits(user.id, card.deckId, 'review');
+        }
+      } catch (error) {
+        console.warn('Failed to update Redis daily limits:', error);
       }
     }
 

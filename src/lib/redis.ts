@@ -120,4 +120,57 @@ export const SessionManager = {
       return null;
     }
   },
+
+  // Get daily limits for a deck
+  async getDailyLimits(userId: string, deckId: string): Promise<{ newCardsStudied: number; reviewCardsStudied: number }> {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const limitsKey = `deck:${deckId}:user:${userId}:daily:${today}`;
+      const limits = await redis.hGetAll(limitsKey);
+      
+      return {
+        newCardsStudied: parseInt(limits.newCardsStudied) || 0,
+        reviewCardsStudied: parseInt(limits.reviewCardsStudied) || 0,
+      };
+    } catch (error) {
+      console.warn('Redis daily limits get failed:', error);
+      return { newCardsStudied: 0, reviewCardsStudied: 0 };
+    }
+  },
+
+  // Increment daily limits
+  async incrementDailyLimits(userId: string, deckId: string, type: 'new' | 'review'): Promise<void> {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const limitsKey = `deck:${deckId}:user:${userId}:daily:${today}`;
+      const field = type === 'new' ? 'newCardsStudied' : 'reviewCardsStudied';
+      
+      await redis.hIncrBy(limitsKey, field, 1);
+      // Set expiration to end of day (86400 seconds = 24 hours)
+      await redis.expire(limitsKey, 86400);
+    } catch (error) {
+      console.warn('Redis daily limits increment failed:', error);
+    }
+  },
+
+  // Check if daily limits are reached
+  async checkDailyLimits(userId: string, deckId: string): Promise<{ canStudyNew: boolean; canStudyReview: boolean }> {
+    try {
+      const [settings, limits] = await Promise.all([
+        this.getDeckSettings(userId, deckId),
+        this.getDailyLimits(userId, deckId),
+      ]);
+
+      const maxNew = settings?.newCardCount || 20;
+      const maxReview = settings?.reviewCardCount || 100;
+
+      return {
+        canStudyNew: limits.newCardsStudied < maxNew,
+        canStudyReview: limits.reviewCardsStudied < maxReview,
+      };
+    } catch (error) {
+      console.warn('Redis daily limits check failed:', error);
+      return { canStudyNew: true, canStudyReview: true };
+    }
+  },
 };
