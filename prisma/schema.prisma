@@ -26,14 +26,16 @@ model User {
   authType         AuthType
   image            String?
   userDeckMappings UserDeckMapping[]
+  srsCardMetadata  SRSCardMetadata[]
 }
 
 model Flashcard {
-  id     String        @id @default(uuid())
-  front  String
-  back   String
-  deckId String
-  deck   FlashcardDeck @relation(fields: [deckId], references: [id])
+  id              String            @id @default(uuid())
+  front           String
+  back            String
+  deckId          String
+  deck            FlashcardDeck     @relation(fields: [deckId], references: [id])
+  srsCardMetadata SRSCardMetadata[]
 }
 
 model FlashcardDeck {
@@ -55,4 +57,28 @@ model UserDeckMapping {
   user   User          @relation(fields: [userId], references: [id])
   deck   FlashcardDeck @relation(fields: [deckId], references: [id])
   type   UserDeckType
+}
+
+enum SRSDifficulty {
+  AGAIN
+  HARD
+  EASY
+}
+
+model SRSCardMetadata {
+  id           String        @id @default(uuid())
+  userId       String
+  flashcardId  String
+  
+  easeFactor   Float         @default(1.3)    
+  interval     BigInt           @default(1)     
+  repetitions  Int           @default(-1)      
+  
+  lastReviewed DateTime?     
+  nextReview   DateTime      
+  
+  user         User          @relation(fields: [userId], references: [id])
+  flashcard    Flashcard     @relation(fields: [flashcardId], references: [id])
+  
+  @@unique([userId, flashcardId])
 }

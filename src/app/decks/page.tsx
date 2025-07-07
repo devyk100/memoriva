@@ -46,7 +46,7 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
                 <Clock className="w-4 h-4" />
                 <span>Ready to study</span>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
@@ -57,12 +57,20 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
                 </div>
               </div>
 
-              <Button 
-                className="w-full mt-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
-                variant="outline"
-              >
-                Start Studying
-              </Button>
+              <span className="flex gap-1">
+                <Button
+                  className="w-1/2 mt-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
+                  variant="outline"
+                >
+                  Study
+                </Button>
+                <Button
+                  className="w-1/2 mt-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
+                  variant="outline"
+                >
+                  Edit
+                </Button>
+              </span>
             </CardContent>
           </Card>
         </Link>
@@ -88,58 +96,58 @@ const DecksPage = async () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-12 px-4 sm:px-6 max-w-7xl">
+      <div className="container mx-auto py-6 sm:py-8 lg:py-12 px-4 sm:px-6 max-w-7xl">
         {/* Header Section */}
-        <div className="mb-16">
+        <div className="mb-8 sm:mb-12 lg:mb-16">
           {name && (
-            <h1 className="text-3xl font-semibold mb-3 text-foreground">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold mb-2 sm:mb-3 text-foreground">
               {greeting}, {name}! 👋
             </h1>
           )}
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base sm:text-lg text-muted-foreground">
             Choose a deck to begin your learning journey
           </p>
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12 lg:mb-16">
           <Card className="border border-border/50 hover:border-border transition-colors duration-200">
-            <CardContent className="pt-6 pb-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-muted rounded-lg">
-                  <BookOpen className="w-5 h-5 text-muted-foreground" />
+                <div className="p-2 bg-muted rounded-lg flex-shrink-0">
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <div>
-                  <div className="text-2xl font-semibold text-foreground">{decks.length}</div>
-                  <p className="text-sm text-muted-foreground">Available Decks</p>
+                <div className="min-w-0">
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{decks.length}</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Available Decks</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="border border-border/50 hover:border-border transition-colors duration-200">
-            <CardContent className="pt-6 pb-6">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-muted rounded-lg">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
+                <div className="p-2 bg-muted rounded-lg flex-shrink-0">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <div>
-                  <div className="text-2xl font-semibold text-foreground">0</div>
-                  <p className="text-sm text-muted-foreground">Study Sessions</p>
+                <div className="min-w-0">
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">0</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Study Sessions</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="border border-border/50 hover:border-border transition-colors duration-200">
-            <CardContent className="pt-6 pb-6">
+
+          <Card className="border border-border/50 hover:border-border transition-colors duration-200 sm:col-span-2 lg:col-span-1">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-muted rounded-lg">
-                  <Users className="w-5 h-5 text-muted-foreground" />
+                <div className="p-2 bg-muted rounded-lg flex-shrink-0">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <div>
-                  <div className="text-2xl font-semibold text-foreground">Personal</div>
-                  <p className="text-sm text-muted-foreground">Study Mode</p>
+                <div className="min-w-0">
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">Personal</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Study Mode</p>
                 </div>
               </div>
             </CardContent>
@@ -148,14 +156,14 @@ const DecksPage = async () => {
 
         {/* Decks Section */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-semibold text-foreground">Your Flashcard Decks</h2>
-            <Button variant="outline" className="gap-2 border-border/50 hover:border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Your Flashcard Decks</h2>
+            <Button variant="outline" className="gap-2 border-border/50 hover:border-border w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               New Deck
             </Button>
           </div>
-          
+
           <DeckList decks={decks} />
         </div>
       </div>
