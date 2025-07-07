@@ -70,8 +70,32 @@ export async function getDeckWithSRS(deckId: string): Promise<DeckWithSRSData | 
     return null;
   }
 
-  // Get or create deck metadata
-  let deckMetadata = await prisma.deckMetadata.findUnique({
+  // Create deck metadata and SRS card metadata using separate powerful SQL operations
+  
+  // 1. Create deck metadata if it doesn't exist
+  await prisma.$executeRaw`
+    INSERT INTO "DeckMetadata" ("id", "userId", "deckId", "newCardCount", "reviewCardCount")
+    SELECT gen_random_uuid(), ${user.id}, ${deck.id}, 20, 100
+    WHERE NOT EXISTS (
+      SELECT 1 FROM "DeckMetadata" 
+      WHERE "userId" = ${user.id} AND "deckId" = ${deck.id}
+    )
+  `;
+  
+  // 2. Create SRS metadata for all cards that don't have it (repetitions = -1 by default)
+  await prisma.$executeRaw`
+    INSERT INTO "SRSCardMetadata" ("id", "userId", "flashcardId", "easeFactor", "interval", "repetitions")
+    SELECT gen_random_uuid(), ${user.id}, f."id", 1.3, 1, -1
+    FROM "Flashcard" f
+    WHERE f."deckId" = ${deck.id}
+    AND NOT EXISTS (
+      SELECT 1 FROM "SRSCardMetadata" srs 
+      WHERE srs."userId" = ${user.id} AND srs."flashcardId" = f."id"
+    )
+  `;
+
+  // Get deck metadata (now guaranteed to exist)
+  const deckMetadata = await prisma.deckMetadata.findUnique({
     where: {
       userId_deckId: {
         userId: user.id,
@@ -81,49 +105,28 @@ export async function getDeckWithSRS(deckId: string): Promise<DeckWithSRSData | 
   });
 
   if (!deckMetadata) {
-    deckMetadata = await prisma.deckMetadata.create({
-      data: {
-        userId: user.id,
-        deckId: deck.id,
-        newCardCount: 20,
-        reviewCardCount: 100,
-      },
-    });
+    throw new Error("Failed to create deck metadata");
   }
 
-  // Create SRS metadata for cards that don't have it
-  const cardsWithoutSRS = deck.flashcards.filter(card => card.srsCardMetadata.length === 0);
-  
-  if (cardsWithoutSRS.length > 0) {
-    await prisma.sRSCardMetadata.createMany({
-      data: cardsWithoutSRS.map(card => ({
-        userId: user.id,
-        flashcardId: card.id,
-        repetitions: -1,
-        easeFactor: 1.3,
-        interval: BigInt(1),
-      })),
-      skipDuplicates: true,
-    });
-
-    // Refetch deck with updated SRS metadata
-    const updatedDeck = await prisma.flashcardDeck.findUnique({
-      where: { id: deckId },
-      include: {
-        flashcards: {
-          include: {
-            srsCardMetadata: {
-              where: { userId: user.id },
-            },
+  // Refetch deck with all SRS metadata (now guaranteed to exist for all cards)
+  const updatedDeck = await prisma.flashcardDeck.findUnique({
+    where: { id: deckId },
+    include: {
+      flashcards: {
+        include: {
+          srsCardMetadata: {
+            where: { userId: user.id },
           },
         },
       },
-    });
+    },
+  });
 
-    if (updatedDeck) {
-      deck.flashcards = updatedDeck.flashcards;
-    }
+  if (!updatedDeck) {
+    throw new Error("Failed to fetch updated deck");
   }
+
+  deck.flashcards = updatedDeck.flashcards;
 
   // Calculate statistics
   const now = new Date();

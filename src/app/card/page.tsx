@@ -207,14 +207,6 @@ const CardPageContent = () => {
         <div className="w-20"></div> {/* Spacer for centering */}
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-muted rounded-full h-2 mb-6">
-        <div 
-          className="bg-primary h-2 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
-
       {/* Flashcard */}
       <div className="max-w-2xl mx-auto">
         <Card className="min-h-[400px] flex flex-col">

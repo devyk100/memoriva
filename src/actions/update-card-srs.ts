@@ -68,6 +68,16 @@ export async function updateCardSRS(params: UpdateCardSRSParams): Promise<Update
       grade
     );
 
+    // Get card info for deck management
+    const card = await prisma.flashcard.findUnique({
+      where: { id: cardId },
+      select: { deckId: true },
+    });
+
+    if (!card) {
+      return { success: false, error: "Card not found" };
+    }
+
     // Update SRS metadata in database
     const updatedSRS = await prisma.sRSCardMetadata.update({
       where: {
@@ -85,25 +95,23 @@ export async function updateCardSRS(params: UpdateCardSRSParams): Promise<Update
       },
     });
 
-    // Track daily limits and card type
-    const card = await prisma.flashcard.findUnique({
-      where: { id: cardId },
-      select: { deckId: true },
-    });
-
-    if (card) {
-      // Increment daily limits in Redis
-      try {
-        if (currentSRS.repetitions === -1) {
-          // This was a new card
-          await SessionManager.incrementDailyLimits(user.id, card.deckId, 'new');
-        } else {
-          // This was a review card
-          await SessionManager.incrementDailyLimits(user.id, card.deckId, 'review');
-        }
-      } catch (error) {
-        console.warn('Failed to update Redis daily limits:', error);
+    // Handle newCardCount decrement in Redis only when new card gets "Easy"
+    try {
+      if (currentSRS.repetitions === -1 && srsUpdate.shouldDecrementNewCardCount) {
+        // This was a new card that got "Easy" - decrement newCardCount
+        await SessionManager.decrementNewCardCount(user.id, card.deckId);
       }
+      
+      // Track daily study counts
+      if (currentSRS.repetitions === -1) {
+        // This was a new card
+        await SessionManager.incrementDailyLimits(user.id, card.deckId, 'new');
+      } else {
+        // This was a review card
+        await SessionManager.incrementDailyLimits(user.id, card.deckId, 'review');
+      }
+    } catch (error) {
+      console.warn('Failed to update Redis counters:', error);
     }
 
     return {

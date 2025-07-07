@@ -173,4 +173,18 @@ export const SessionManager = {
       return { canStudyNew: true, canStudyReview: true };
     }
   },
+
+  // Decrement new card count when a new card graduates (gets "Easy")
+  async decrementNewCardCount(userId: string, deckId: string): Promise<void> {
+    try {
+      const settingsKey = `deck:${deckId}:user:${userId}:settings`;
+      const currentCount = await redis.hGet(settingsKey, 'newCardCount');
+      const newCount = Math.max(0, (parseInt(currentCount || '20') - 1));
+      
+      await redis.hSet(settingsKey, 'newCardCount', newCount.toString());
+      await redis.expire(settingsKey, 86400); // 24 hours
+    } catch (error) {
+      console.warn('Redis new card count decrement failed:', error);
+    }
+  },
 };

@@ -163,7 +163,7 @@ async function main() {
 
   console.log("✅ Created user-deck mappings and metadata");
 
-  // Create some initial SRS metadata for a few cards (some new, some with review dates)
+  // Create SRS metadata for ALL cards with proper defaults
   const allFlashcards = [
     ...geographyDeck.flashcards,
     ...scienceDeck.flashcards,
@@ -174,54 +174,46 @@ async function main() {
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  // Create SRS metadata for some cards
-  await prisma.sRSCardMetadata.createMany({
-    data: [
-      // New cards (repetitions = -1, no nextReview)
-      {
+  // Create SRS metadata for ALL cards - most as new cards (repetitions = -1)
+  const srsMetadataData = allFlashcards.map((card, index) => {
+    if (index < 2) {
+      // First 2 cards are new cards (repetitions = -1)
+      return {
         userId: user.id,
-        flashcardId: allFlashcards[0].id,
+        flashcardId: card.id,
         repetitions: -1,
         easeFactor: 1.3,
         interval: BigInt(1),
-      },
-      {
+        lastReviewed: null,
+        nextReview: null,
+      };
+    } else if (index < 4) {
+      // Next 2 cards are due for review
+      return {
         userId: user.id,
-        flashcardId: allFlashcards[1].id,
-        repetitions: -1,
-        easeFactor: 1.3,
-        interval: BigInt(1),
-      },
-      // Cards due for review
-      {
-        userId: user.id,
-        flashcardId: allFlashcards[2].id,
+        flashcardId: card.id,
         repetitions: 2,
         easeFactor: 1.5,
-        interval: BigInt(2),
+        interval: BigInt(120), // 2 hours in minutes
         lastReviewed: yesterday,
         nextReview: now,
-      },
-      {
+      };
+    } else {
+      // Remaining cards are also new cards (repetitions = -1)
+      return {
         userId: user.id,
-        flashcardId: allFlashcards[3].id,
-        repetitions: 1,
-        easeFactor: 1.4,
+        flashcardId: card.id,
+        repetitions: -1,
+        easeFactor: 1.3,
         interval: BigInt(1),
-        lastReviewed: yesterday,
-        nextReview: yesterday,
-      },
-      // Future review cards
-      {
-        userId: user.id,
-        flashcardId: allFlashcards[4].id,
-        repetitions: 3,
-        easeFactor: 1.8,
-        interval: BigInt(5),
-        lastReviewed: now,
-        nextReview: tomorrow,
-      },
-    ],
+        lastReviewed: null,
+        nextReview: null,
+      };
+    }
+  });
+
+  await prisma.sRSCardMetadata.createMany({
+    data: srsMetadataData,
   });
 
   console.log("✅ Created initial SRS metadata");

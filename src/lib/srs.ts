@@ -22,7 +22,7 @@ export interface SRSUpdateResult {
 export function calculateSRSUpdate(
   cardData: SRSCardData,
   grade: SRSGrade
-): SRSUpdateResult {
+): SRSUpdateResult & { shouldDecrementNewCardCount: boolean } {
   const now = new Date();
   let { repetitions, easeFactor, interval } = cardData;
 
@@ -30,7 +30,7 @@ export function calculateSRSUpdate(
   let intervalMinutes = Number(interval);
 
   if (repetitions === -1) {
-    // New card logic
+    // New card logic - set repetitions = 1 and apply intervals
     repetitions = 1;
     
     if (grade === 0) {
@@ -49,6 +49,7 @@ export function calculateSRSUpdate(
       interval: BigInt(intervalMinutes),
       lastReviewed: now,
       nextReview,
+      shouldDecrementNewCardCount: true, // Always decrement for new cards
     };
   } else if (grade === 0) {
     // Again - penalty logic
@@ -75,6 +76,7 @@ export function calculateSRSUpdate(
       interval: BigInt(intervalMinutes),
       lastReviewed: lastReviewDate,
       nextReview,
+      shouldDecrementNewCardCount: false, // Review cards don't affect newCardCount
     };
   } else {
     // Hard (grade 1) or Easy (grade 2) - SM-2 algorithm
@@ -108,6 +110,7 @@ export function calculateSRSUpdate(
       interval: BigInt(intervalMinutes),
       lastReviewed: lastReviewDate,
       nextReview,
+      shouldDecrementNewCardCount: false, // Review cards don't affect newCardCount
     };
   }
 }
@@ -120,14 +123,16 @@ export function getCardsForReview(
   reviewCardCount: number
 ): string[] {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
-  // Get cards that are due for review (nextReview <= now and repetitions >= 0)
+  // End of today (11:59:59 PM)
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  
+  // Get cards that are due for review today (nextReview <= end of today and repetitions >= 0)
   const dueCards = cards
     .filter(card => 
       card.repetitions >= 0 && 
       card.nextReview && 
-      card.nextReview <= now
+      card.nextReview <= endOfToday
     )
     .sort((a, b) => {
       // Sort by nextReview date (earliest first)
