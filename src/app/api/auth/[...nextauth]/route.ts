@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 import { AuthOptions, User, Account, Profile, Session } from "next-auth";
 import { createUserIfNotExists } from "@/actions/create-user";
+import { prisma } from "@/lib/prisma";
 
 interface MySession extends Session {
   user: {
@@ -41,19 +42,40 @@ const authOptions: AuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {
-      if (account) {
-        const authType = account.provider
-        const resp = await createUserIfNotExists({
-          authType: authType as "google" | "github",
-          email: user.email!,
-          image: user.image!,
-          name: user.name!
-        })
-        console.log(resp.id, "has signed in")
-        return resp.isAuth
-      } else {
-        return true;
+      if (account && user.email) {
+        try {
+          const authType = account.provider.toUpperCase() as "GOOGLE" | "GITHUB"
+          const resp = await createUserIfNotExists({
+            authType: authType,
+            email: user.email,
+            image: user.image || '',
+            name: user.name || ''
+          })
+          console.log(resp.id, "has signed in")
+          return resp.isAuth
+        } catch (error) {
+          console.error("Error in signIn callback:", error)
+          // Allow sign in even if user creation fails
+          return true
+        }
       }
+      return true
+    },
+    async session({ session, token }) {
+      // Add user ID to session if available
+      if (session.user?.email) {
+        try {
+          const user = await prisma.user.findFirst({
+            where: { email: session.user.email }
+          })
+          if (user) {
+            (session.user as any).id = user.id
+          }
+        } catch (error) {
+          console.error("Error fetching user in session callback:", error)
+        }
+      }
+      return session
     }
   },
 };

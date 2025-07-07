@@ -181,6 +181,8 @@ export async function createStudySession(params: CreateStudySessionParams): Prom
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-ID': user.id,
+          'X-User-Email': user.email,
         },
         body: JSON.stringify({
           sessionId: newSession.id,

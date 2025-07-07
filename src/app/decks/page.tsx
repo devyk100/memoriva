@@ -127,16 +127,17 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
 };
 
 const DecksPage = async () => {
-  const session = await getServerSession(authOptions);
-  const name = session?.user?.name;
+  try {
+    const session = await getServerSession(authOptions);
+    const name = session?.user?.name;
 
-  // For development: use hardcoded email if no session
-  const userEmail = session?.user?.email || 'devyk100@gmail.com';
-  const userName = session?.user?.name || 'Dev User';
+    // For development: use hardcoded email if no session
+    const userEmail = session?.user?.email || 'devyk100@gmail.com';
+    const userName = session?.user?.name || 'Dev User';
 
-  if (!userEmail) {
-    return <div>Please log in to view your decks.</div>;
-  }
+    if (!userEmail) {
+      return <div>Please log in to view your decks.</div>;
+    }
 
   const currentTime = new Date();
   const currentHour = currentTime.getHours();
@@ -267,6 +268,22 @@ const DecksPage = async () => {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error("Error loading decks page:", error);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold mb-4">Something went wrong</h1>
+          <p className="text-muted-foreground mb-6">
+            We encountered an error while loading your decks. Please try refreshing the page.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default DecksPage;

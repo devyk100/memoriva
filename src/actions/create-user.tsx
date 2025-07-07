@@ -6,7 +6,7 @@ export async function createUserIfNotExists({
     email: string;
     name: string;
     image: string;
-    authType: "google" | "github"
+    authType: "GOOGLE" | "GITHUB"
 }): Promise<{isAuth: boolean, id: string}> {
     "use server"
     try {
