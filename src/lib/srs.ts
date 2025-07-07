@@ -22,7 +22,7 @@ export interface SRSUpdateResult {
 export function calculateSRSUpdate(
   cardData: SRSCardData,
   grade: SRSGrade
-): SRSUpdateResult & { shouldDecrementNewCardCount: boolean } {
+): SRSUpdateResult & { shouldDecrementNewCardCount: boolean; reviewCountUpdate: { easyReviewCount?: number; hardReviewCount?: number; againReviewCount?: number } } {
   const now = new Date();
   let { repetitions, easeFactor, interval } = cardData;
 
@@ -33,12 +33,17 @@ export function calculateSRSUpdate(
     // New card logic - set repetitions = 1 and apply intervals
     repetitions = 1;
     
+    let reviewCountUpdate: { easyReviewCount?: number; hardReviewCount?: number; againReviewCount?: number } = {};
+    
     if (grade === 0) {
       intervalMinutes = 5; // 5 minutes
+      reviewCountUpdate.againReviewCount = 1;
     } else if (grade === 1) {
       intervalMinutes = 10; // 10 minutes
+      reviewCountUpdate.hardReviewCount = 1;
     } else {
       intervalMinutes = 20; // 20 minutes
+      reviewCountUpdate.easyReviewCount = 1;
     }
     
     const nextReview = new Date(now.getTime() + intervalMinutes * 60 * 1000);
@@ -50,6 +55,7 @@ export function calculateSRSUpdate(
       lastReviewed: now,
       nextReview,
       shouldDecrementNewCardCount: true, // Always decrement for new cards
+      reviewCountUpdate,
     };
   } else if (grade === 0) {
     // Again - penalty logic
@@ -77,14 +83,19 @@ export function calculateSRSUpdate(
       lastReviewed: lastReviewDate,
       nextReview,
       shouldDecrementNewCardCount: false, // Review cards don't affect newCardCount
+      reviewCountUpdate: { againReviewCount: 1 },
     };
   } else {
     // Hard (grade 1) or Easy (grade 2) - SM-2 algorithm
     let q: number;
+    let reviewCountUpdate: { easyReviewCount?: number; hardReviewCount?: number; againReviewCount?: number } = {};
+    
     if (grade === 1) {
       q = 3; // Hard
+      reviewCountUpdate.hardReviewCount = 1;
     } else {
       q = 5; // Easy
+      reviewCountUpdate.easyReviewCount = 1;
     }
     
     repetitions++;
@@ -111,6 +122,7 @@ export function calculateSRSUpdate(
       lastReviewed: lastReviewDate,
       nextReview,
       shouldDecrementNewCardCount: false, // Review cards don't affect newCardCount
+      reviewCountUpdate,
     };
   }
 }

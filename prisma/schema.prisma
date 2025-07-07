@@ -28,15 +28,17 @@ model User {
   userDeckMappings UserDeckMapping[]
   srsCardMetadata  SRSCardMetadata[]
   deckMetadata     DeckMetadata[]
+  studySessions    StudySession[]
 }
 
 model Flashcard {
-  id              String            @id @default(uuid())
-  front           String
-  back            String
-  deckId          String
-  deck            FlashcardDeck     @relation(fields: [deckId], references: [id])
-  srsCardMetadata SRSCardMetadata[]
+  id                String            @id @default(uuid())
+  front             String
+  back              String
+  deckId            String
+  deck              FlashcardDeck     @relation(fields: [deckId], references: [id])
+  srsCardMetadata   SRSCardMetadata[]
+  studySessionCards StudySessionCard[]
 }
 
 model FlashcardDeck {
@@ -45,6 +47,7 @@ model FlashcardDeck {
   flashcards       Flashcard[]
   userDeckMappings UserDeckMapping[]
   deckMetadata     DeckMetadata[]
+  studySessions    StudySession[]
 }
 
 enum UserDeckType {
@@ -79,6 +82,11 @@ model SRSCardMetadata {
   lastReviewed DateTime?     
   nextReview   DateTime?      
   
+  // Review counts for RAG analysis
+  easyReviewCount  Int         @default(0)
+  hardReviewCount  Int         @default(0)
+  againReviewCount Int         @default(0)
+  
   user         User          @relation(fields: [userId], references: [id])
   flashcard    Flashcard     @relation(fields: [flashcardId], references: [id])
   
@@ -96,4 +104,38 @@ model DeckMetadata {
   deck            FlashcardDeck @relation(fields: [deckId], references: [id])
   
   @@unique([userId, deckId])
+}
+
+enum StudySessionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model StudySession {
+  id          String             @id @default(uuid())
+  userId      String
+  deckId      String
+  prompt      String
+  maxCards    Int
+  status      StudySessionStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  completedAt DateTime?
+  
+  user        User               @relation(fields: [userId], references: [id])
+  deck        FlashcardDeck      @relation(fields: [deckId], references: [id])
+  cards       StudySessionCard[]
+}
+
+model StudySessionCard {
+  id              String       @id @default(uuid())
+  studySessionId  String
+  flashcardId     String
+  order           Int
+  
+  studySession    StudySession @relation(fields: [studySessionId], references: [id], onDelete: Cascade)
+  flashcard       Flashcard    @relation(fields: [flashcardId], references: [id])
+  
+  @@unique([studySessionId, order])
 }

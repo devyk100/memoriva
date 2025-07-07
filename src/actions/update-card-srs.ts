@@ -78,7 +78,26 @@ export async function updateCardSRS(params: UpdateCardSRSParams): Promise<Update
       return { success: false, error: "Card not found" };
     }
 
-    // Update SRS metadata in database
+    // Update SRS metadata in database including review counts
+    const updateData: any = {
+      repetitions: srsUpdate.repetitions,
+      easeFactor: srsUpdate.easeFactor,
+      interval: srsUpdate.interval,
+      lastReviewed: srsUpdate.lastReviewed,
+      nextReview: srsUpdate.nextReview,
+    };
+
+    // Add review count increments
+    if (srsUpdate.reviewCountUpdate.easyReviewCount) {
+      updateData.easyReviewCount = { increment: srsUpdate.reviewCountUpdate.easyReviewCount };
+    }
+    if (srsUpdate.reviewCountUpdate.hardReviewCount) {
+      updateData.hardReviewCount = { increment: srsUpdate.reviewCountUpdate.hardReviewCount };
+    }
+    if (srsUpdate.reviewCountUpdate.againReviewCount) {
+      updateData.againReviewCount = { increment: srsUpdate.reviewCountUpdate.againReviewCount };
+    }
+
     const updatedSRS = await prisma.sRSCardMetadata.update({
       where: {
         userId_flashcardId: {
@@ -86,13 +105,7 @@ export async function updateCardSRS(params: UpdateCardSRSParams): Promise<Update
           flashcardId: cardId,
         },
       },
-      data: {
-        repetitions: srsUpdate.repetitions,
-        easeFactor: srsUpdate.easeFactor,
-        interval: srsUpdate.interval,
-        lastReviewed: srsUpdate.lastReviewed,
-        nextReview: srsUpdate.nextReview,
-      },
+      data: updateData,
     });
 
     // Handle newCardCount decrement in Redis only when new card gets "Easy"
