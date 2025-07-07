@@ -174,16 +174,35 @@ export async function createStudySession(params: CreateStudySessionParams): Prom
       include: { deck: true }
     });
 
-    // TODO: Trigger background RAG processing here
-    // For now, we'll simulate it by updating status to PROCESSING
-    await prisma.studySession.update({
-      where: { id: newSession.id },
-      data: { status: "PROCESSING" }
-    });
+    // Call the Go RAG backend to process the study session
+    try {
+      const ragBackendUrl = process.env.RAG_BACKEND_URL || 'http://localhost:8080';
+      const response = await fetch(`${ragBackendUrl}/api/study-sessions/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: newSession.id,
+        }),
+      });
 
-    // TODO: Call external RAG service (Python/Go backend)
-    // This would analyze the deck cards and create StudySessionCard entries
-    // For now, we'll simulate this process
+      if (!response.ok) {
+        console.error('Failed to trigger RAG processing:', response.statusText);
+        // Update status to PROCESSING anyway - the backend will handle it
+        await prisma.studySession.update({
+          where: { id: newSession.id },
+          data: { status: "PROCESSING" }
+        });
+      }
+    } catch (error) {
+      console.error('Error calling RAG backend:', error);
+      // Update status to PROCESSING anyway - fallback behavior
+      await prisma.studySession.update({
+        where: { id: newSession.id },
+        data: { status: "PROCESSING" }
+      });
+    }
 
     const studySession: StudySession = {
       id: newSession.id,

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Loader2, Plus, Play, Clock, BookOpen } from "lucide-react";
 
 interface Deck {
@@ -67,6 +68,7 @@ const StudyPage = () => {
   const [prompt, setPrompt] = useState("");
   const [maxCards, setMaxCards] = useState(20);
 
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data: decks = [], isLoading: decksLoading } = useQuery({
@@ -249,7 +251,7 @@ const StudyPage = () => {
                     </div>
                     
                     {session.status === "READY" && (
-                      <Button size="sm">
+                      <Button size="sm" onClick={() => router.push(`/study/${session.id}`)}>
                         <Play className="h-4 w-4 mr-2" />
                         Start Study
                       </Button>

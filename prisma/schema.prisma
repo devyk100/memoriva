@@ -15,8 +15,9 @@ datasource db {
 }
 
 enum AuthType {
-  google
-  github
+  GOOGLE
+  GITHUB
+  EMAIL
 }
 
 model User {
@@ -25,6 +26,7 @@ model User {
   email            String            @unique
   authType         AuthType
   image            String?
+  flashcardDecks   FlashcardDeck[]
   userDeckMappings UserDeckMapping[]
   srsCardMetadata  SRSCardMetadata[]
   deckMetadata     DeckMetadata[]
@@ -36,6 +38,7 @@ model Flashcard {
   front             String
   back              String
   deckId            String
+  order             Int?
   deck              FlashcardDeck     @relation(fields: [deckId], references: [id])
   srsCardMetadata   SRSCardMetadata[]
   studySessionCards StudySessionCard[]
@@ -44,6 +47,11 @@ model Flashcard {
 model FlashcardDeck {
   id               String            @id @default(uuid())
   name             String
+  description      String?
+  userId           String
+  isTemplate       Boolean           @default(false)
+  order            Int?
+  user             User              @relation(fields: [userId], references: [id])
   flashcards       Flashcard[]
   userDeckMappings UserDeckMapping[]
   deckMetadata     DeckMetadata[]
