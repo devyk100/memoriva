@@ -4,17 +4,24 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getFlashcardsByDeckId } from "@/actions/get-flashcards";
+import { createFlashcard, updateFlashcard } from "@/actions/manage-flashcards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw, Edit3, Save, X, Plus } from "lucide-react";
-import { Flashcard } from "@/types/flashcard";
 import Editor from "@/components/editor/editor";
 import { cn } from "@/lib/utils";
+
+interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  deckId: string;
+}
 
 const CardEditorPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const deckId = searchParams.get("id");
+  const deckId = searchParams.get("deck") || searchParams.get("id"); // Support both parameters
   const initialCardId = searchParams.get("cardId");
   
   const [selectedCard, setSelectedCard] = useState<Flashcard | null>(null);
@@ -36,66 +43,41 @@ const CardEditorPage = () => {
     enabled: !!deckId,
   });
 
-  // Mock API function to create a new card
-  const createCard = async (deckId: string): Promise<Flashcard> => {
-    console.log("Creating new card for deck:", deckId);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newCard: Flashcard = {
-      id: `card_${Date.now()}`,
-      front: "",
-      back: "",
-      deckId: deckId
-    };
-    
-    console.log("Card created:", newCard);
-    return newCard;
-  };
-
   // React Query mutation for creating cards
   const createCardMutation = useMutation({
-    mutationFn: (deckId: string) => createCard(deckId),
-    onSuccess: (newCard) => {
-      // Update the query cache with the new card
-      queryClient.setQueryData(["flashcards", deckId], (oldData: any) => {
-        if (!oldData) {
-          // For new decks, create initial data structure
-          return {
-            deck: {
-              id: deckId,
-              name: "New Deck",
-              flashcards: [newCard]
-            },
-            totalCards: 1
-          };
-        }
+    mutationFn: (deckId: string) => createFlashcard(deckId, "", ""),
+    onSuccess: (result) => {
+      if (result.success && result.cardId) {
+        // Refetch the flashcards to get the updated list
+        refetch();
         
-        return {
-          ...oldData,
-          deck: {
-            ...oldData.deck,
-            flashcards: [...oldData.deck.flashcards, newCard]
-          },
-          totalCards: oldData.totalCards + 1
+        // Create a temporary card object for immediate UI update
+        const newCard: Flashcard = {
+          id: result.cardId,
+          front: "",
+          back: "",
+          deckId: deckId!
         };
-      });
-      
-      // Select the new card and start editing
-      setSelectedCard(newCard);
-      setEditingFront("");
-      setEditingBack("");
-      setIsEditing(true);
-      setActiveTab("front");
-      
-      // Update URL with new card
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set("cardId", newCard.id);
-      window.history.replaceState({}, "", newUrl.toString());
+        
+        // Select the new card and start editing
+        setSelectedCard(newCard);
+        setEditingFront("");
+        setEditingBack("");
+        setIsEditing(true);
+        setActiveTab("front");
+        
+        // Update URL with new card
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("cardId", result.cardId);
+        window.history.replaceState({}, "", newUrl.toString());
+      } else {
+        console.error("Failed to create card:", result.error);
+        alert(result.error || "Failed to create card");
+      }
     },
     onError: (error) => {
       console.error("Failed to create card:", error);
+      alert("Failed to create card. Please try again.");
     }
   });
 
@@ -131,32 +113,25 @@ const CardEditorPage = () => {
   const handleSaveEdit = async () => {
     if (!selectedCard) return;
     
-    // Mock API call to update card
     try {
-      console.log("Updating card:", {
-        id: selectedCard.id,
-        front: editingFront,
-        back: editingBack
-      });
+      const result = await updateFlashcard(selectedCard.id, editingFront, editingBack);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Update local state
-      if (flashcardData) {
+      if (result.success) {
+        // Update local state
         const updatedCard = { ...selectedCard, front: editingFront, back: editingBack };
         setSelectedCard(updatedCard);
         
-        // Update the card in the deck data
-        const cardIndex = flashcardData.deck.flashcards.findIndex(c => c.id === selectedCard.id);
-        if (cardIndex !== -1) {
-          flashcardData.deck.flashcards[cardIndex] = updatedCard;
-        }
+        // Refetch to ensure data consistency
+        refetch();
+        
+        setIsEditing(false);
+      } else {
+        console.error("Failed to update card:", result.error);
+        alert(result.error || "Failed to update card");
       }
-      
-      setIsEditing(false);
     } catch (error) {
       console.error("Failed to update card:", error);
+      alert("Failed to update card. Please try again.");
     }
   };
 

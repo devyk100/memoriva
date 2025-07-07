@@ -1,15 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { FlashcardDeck } from "@/generated/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Users, Plus } from "lucide-react";
+import { BookOpen, Clock, Users, Plus, Edit, Settings } from "lucide-react";
 import Link from "next/link";
 import { NewDeckDialog } from "@/components/new-deck-dialog";
+import { getDeckStats } from "@/actions/update-card-srs";
+
+interface DeckWithStats {
+  id: string;
+  name: string;
+  stats: {
+    totalCards: number;
+    newCards: number;
+    dueCards: number;
+    futureCards: number;
+    studiedToday: number;
+  };
+}
 
 interface DeckListProps {
-  decks: FlashcardDeck[];
+  decks: DeckWithStats[];
 }
 
 const DeckList: React.FC<DeckListProps> = ({ decks }) => {
@@ -32,51 +44,71 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {decks.map((deck) => (
-        <Link key={deck.id} href={`/card?id=${deck.id}`}>
-          <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer border border-border/50 hover:border-border h-full">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg font-semibold leading-tight text-foreground group-hover:text-foreground transition-colors">
-                  {deck.name}
-                </CardTitle>
-                <div className="p-1.5 bg-muted rounded-md">
-                  <BookOpen className="w-4 h-4 text-muted-foreground" />
-                </div>
+        <Card key={deck.id} className="group hover:shadow-lg transition-all duration-200 border border-border/50 hover:border-border h-full">
+          <CardHeader className="pb-4">
+            <div className="flex items-start justify-between">
+              <CardTitle className="text-lg font-semibold leading-tight text-foreground group-hover:text-foreground transition-colors">
+                {deck.name}
+              </CardTitle>
+              <div className="p-1.5 bg-muted rounded-md">
+                <BookOpen className="w-4 h-4 text-muted-foreground" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>Ready to study</span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* SRS Stats */}
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-muted-foreground">New: {deck.stats.newCards}</span>
               </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-muted-foreground">Due: {deck.stats.dueCards}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">Total: {deck.stats.totalCards}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-muted-foreground">Today: {deck.stats.studiedToday}</span>
+              </div>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="w-4 h-4" />
-                  <span>Personal</span>
-                </div>
-                <div className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-md font-medium">
-                  New
-                </div>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span>
+                {deck.stats.dueCards > 0 
+                  ? `${deck.stats.dueCards} cards due` 
+                  : deck.stats.newCards > 0 
+                    ? `${deck.stats.newCards} new cards`
+                    : "All caught up!"
+                }
+              </span>
+            </div>
 
-              <span className="flex gap-1">
+            <div className="flex gap-1">
+              <Link href={`/card?id=${deck.id}`} className="flex-1">
                 <Button
-                  className="w-1/2 mt-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
+                  className="w-full border-border/50 hover:border-border hover:bg-muted/50 transition-all"
                   variant="outline"
                 >
                   Study
                 </Button>
+              </Link>
+              <Link href={`/card-editor?deck=${deck.id}`} className="flex-1">
                 <Button
-                  className="w-1/2 mt-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
+                  className="w-full border-border/50 hover:border-border hover:bg-muted/50 transition-all"
                   variant="outline"
                 >
+                  <Edit className="w-4 h-4 mr-1" />
                   Edit
                 </Button>
-              </span>
-            </CardContent>
-          </Card>
-        </Link>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -85,6 +117,14 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
 const DecksPage = async () => {
   const session = await getServerSession(authOptions);
   const name = session?.user?.name;
+
+  // For development: use hardcoded email if no session
+  const userEmail = session?.user?.email || 'devyk100@gmail.com';
+  const userName = session?.user?.name || 'Dev User';
+
+  if (!userEmail) {
+    return <div>Please log in to view your decks.</div>;
+  }
 
   const currentTime = new Date();
   const currentHour = currentTime.getHours();
@@ -95,16 +135,54 @@ const DecksPage = async () => {
     greeting = "Good evening";
   }
 
-  const decks = await prisma.flashcardDeck.findMany();
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: { email: userEmail },
+  });
+
+  if (!user) {
+    return <div>User not found.</div>;
+  }
+
+  // Get user's decks with mappings
+  const userDecks = await prisma.userDeckMapping.findMany({
+    where: { userId: user.id },
+    include: {
+      deck: true,
+    },
+  });
+
+  // Get stats for each deck
+  const decksWithStats: DeckWithStats[] = await Promise.all(
+    userDecks.map(async (userDeck) => {
+      const statsResult = await getDeckStats(userDeck.deck.id);
+      return {
+        id: userDeck.deck.id,
+        name: userDeck.deck.name,
+        stats: statsResult.stats || {
+          totalCards: 0,
+          newCards: 0,
+          dueCards: 0,
+          futureCards: 0,
+          studiedToday: 0,
+        },
+      };
+    })
+  );
+
+  // Calculate overall stats
+  const totalDecks = decksWithStats.length;
+  const totalDueCards = decksWithStats.reduce((sum, deck) => sum + deck.stats.dueCards, 0);
+  const totalStudiedToday = decksWithStats.reduce((sum, deck) => sum + deck.stats.studiedToday, 0);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 sm:py-8 lg:py-12 px-4 sm:px-6 max-w-7xl">
         {/* Header Section */}
         <div className="mb-8 sm:mb-12 lg:mb-16">
-          {name && (
+          {userName && (
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold mb-2 sm:mb-3 text-foreground">
-              {greeting}, {name}! 👋
+              {greeting}, {userName}! 👋
             </h1>
           )}
           <p className="text-base sm:text-lg text-muted-foreground">
@@ -121,7 +199,7 @@ const DecksPage = async () => {
                   <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{decks.length}</div>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{totalDecks}</div>
                   <p className="text-xs sm:text-sm text-muted-foreground">Available Decks</p>
                 </div>
               </div>
@@ -135,8 +213,8 @@ const DecksPage = async () => {
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">0</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Study Sessions</p>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{totalDueCards}</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Cards Due</p>
                 </div>
               </div>
             </CardContent>
@@ -149,8 +227,8 @@ const DecksPage = async () => {
                   <Users className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">Personal</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Study Mode</p>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{totalStudiedToday}</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Studied Today</p>
                 </div>
               </div>
             </CardContent>
@@ -164,7 +242,7 @@ const DecksPage = async () => {
             <NewDeckDialog />
           </div>
 
-          <DeckList decks={decks} />
+          <DeckList decks={decksWithStats} />
         </div>
       </div>
     </div>

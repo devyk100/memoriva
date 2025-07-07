@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
+import { createDeck } from "@/actions/create-deck";
 
 interface NewDeckDialogProps {
   children?: React.ReactNode;
@@ -31,26 +32,24 @@ export function NewDeckDialog({ children }: NewDeckDialogProps) {
     setIsCreating(true);
     
     try {
-      // Mock API call to create deck
-      console.log("Creating deck:", deckName);
+      const result = await createDeck(deckName);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock deck ID - in real implementation this would come from the API
-      const mockDeckId = `deck_${Date.now()}`;
-      
-      console.log("Deck created with ID:", mockDeckId);
-      
-      // Close dialog and reset state
-      setOpen(false);
-      setDeckName("");
-      setIsCreating(false);
-      
-      // Redirect to card editor with the new deck ID
-      router.push(`/card-editor?id=${mockDeckId}`);
+      if (result.success && result.deckId) {
+        // Close dialog and reset state
+        setOpen(false);
+        setDeckName("");
+        setIsCreating(false);
+        
+        // Redirect to card editor with the new deck ID
+        router.push(`/card-editor?deck=${result.deckId}`);
+      } else {
+        console.error("Failed to create deck:", result.error);
+        alert(result.error || "Failed to create deck");
+        setIsCreating(false);
+      }
     } catch (error) {
       console.error("Failed to create deck:", error);
+      alert("Failed to create deck. Please try again.");
       setIsCreating(false);
     }
   };
