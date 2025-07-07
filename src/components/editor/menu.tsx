@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Button } from "../ui/button"
 import { useCurrentEditor } from "@tiptap/react"
 import { cn } from "@/lib/utils"
+import { ColorPicker } from "./color-picker"
 
 import BoldIcon from "../../../public/editorIcons/bold.svg"
 import ItalicIcon from "../../../public/editorIcons/italic.svg"
@@ -213,38 +214,11 @@ const MenuBar = ({className}: {
         >
           <Image alt='redo' src={RedoIcon} height={100} width={100} className='w-[20px] h-[20px]' />
         </Button>
-        <Button
-          variant={"icon-button"}
-          onClick={() => editor.chain().focus().setColor('#958DF1').run()}
-          className={editor.isActive('textStyle', { color: '#958DF1' }) ? 'bg-secondary dark:bg-lime-500' : ''}
-        >
-          <div className='w-[20px] h-[20px] p-[2px] bg-[#958DF1] '>
-          </div>
-        </Button>
-        <Button
-          variant={"icon-button"}
-          onClick={() => editor.chain().focus().setColor('#14a0fc').run()}
-          className={editor.isActive('textStyle', { color: '#14a0fc' }) ? 'bg-secondary dark:bg-lime-500' : ''}
-        >
-          <div className='w-[20px] h-[20px] p-[2px] bg-[#14a0fc] '>
-          </div>
-        </Button>
-        <Button
-          variant={"icon-button"}
-          onClick={() => editor.chain().focus().setColor('#f77620').run()}
-          className={editor.isActive('textStyle', { color: '#f77620' }) ? 'bg-secondary dark:bg-lime-500' : ''}
-        >
-          <div className='w-[20px] h-[20px] p-[2px] bg-[#f77620] '>
-          </div>
-        </Button>
-        <Button
-          variant={"icon-button"}
-          onClick={() => editor.chain().focus().setColor('red').run()}
-          className={editor.isActive('textStyle', { color: 'red ' }) ? 'bg-secondary dark:bg-lime-500' : ''}
-        >
-          <div className='w-[20px] h-[20px] p-[2px] bg-red-500 '>
-          </div>
-        </Button>
+        <ColorPicker
+          currentColor={editor.getAttributes('textStyle').color}
+          onColorChange={(color) => editor.chain().focus().setColor(color).run()}
+          className={editor.isActive('textStyle') ? 'bg-secondary dark:bg-lime-500' : ''}
+        />
       </div>
     </div>
   )
