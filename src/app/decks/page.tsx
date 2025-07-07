@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Clock, Users, Plus } from "lucide-react";
 import Link from "next/link";
+import { NewDeckDialog } from "@/components/new-deck-dialog";
 
 interface DeckListProps {
   decks: FlashcardDeck[];
@@ -18,10 +19,12 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
         <BookOpen className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold mb-2">No decks available</h3>
         <p className="text-muted-foreground mb-6">Create your first flashcard deck to get started</p>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Create New Deck
-        </Button>
+        <NewDeckDialog>
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create New Deck
+          </Button>
+        </NewDeckDialog>
       </div>
     );
   }
@@ -158,10 +161,7 @@ const DecksPage = async () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Your Flashcard Decks</h2>
-            <Button variant="outline" className="gap-2 border-border/50 hover:border-border w-full sm:w-auto">
-              <Plus className="w-4 h-4" />
-              New Deck
-            </Button>
+            <NewDeckDialog />
           </div>
 
           <DeckList decks={decks} />
