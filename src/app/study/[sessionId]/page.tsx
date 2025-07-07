@@ -40,48 +40,15 @@ const StudySessionViewer = () => {
   const fetchStudySession = async () => {
     try {
       setIsLoading(true);
-      // For now, we'll create mock data since we need to implement the backend endpoint
-      // TODO: Replace with actual API call
-      const mockData: StudySessionData = {
-        id: sessionId,
-        deckName: "Science Fundamentals",
-        prompt: "Help me understand physics and chemistry concepts that I struggle with",
-        cards: [
-          {
-            id: "1",
-            front: "What is Newton's First Law of Motion?",
-            back: "An object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.",
-            order: 1
-          },
-          {
-            id: "2", 
-            front: "What is the chemical formula for water?",
-            back: "H₂O - Two hydrogen atoms bonded to one oxygen atom",
-            order: 2
-          },
-          {
-            id: "3",
-            front: "What is the speed of light in a vacuum?",
-            back: "299,792,458 meters per second (approximately 3 × 10⁸ m/s)",
-            order: 3
-          },
-          {
-            id: "4",
-            front: "What is photosynthesis?",
-            back: "The process by which plants use sunlight, water, and carbon dioxide to create oxygen and energy in the form of sugar.",
-            order: 4
-          },
-          {
-            id: "5",
-            front: "What is the periodic table?",
-            back: "A tabular arrangement of chemical elements, ordered by their atomic number, electron configuration, and recurring chemical properties.",
-            order: 5
-          }
-        ],
-        status: "READY"
-      };
       
-      setSessionData(mockData);
+      const response = await fetch(`/api/study-session/${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch study session: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setSessionData(data);
       setError(null);
     } catch (err) {
       setError("Failed to load study session");

@@ -52,7 +52,8 @@ const authOptions: AuthOptions = {
             name: user.name || ''
           })
           console.log(resp.id, "has signed in")
-          return resp.isAuth
+          // Always return true to allow sign in
+          return true
         } catch (error) {
           console.error("Error in signIn callback:", error)
           // Allow sign in even if user creation fails

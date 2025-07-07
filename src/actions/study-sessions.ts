@@ -31,12 +31,11 @@ export interface Deck {
 export async function getDecksForStudy(): Promise<{ success: boolean; decks?: Deck[]; error?: string }> {
   const session = await getServerSession(authOptions);
   
-  // For development: use hardcoded email if no session
-  const userEmail = session?.user?.email || 'devyk100@gmail.com';
-  
-  if (!userEmail) {
+  if (!session?.user?.email) {
     return { success: false, error: "Not authenticated" };
   }
+  
+  const userEmail = session.user.email;
 
   try {
     const user = await prisma.user.findUnique({
@@ -80,12 +79,11 @@ export async function getDecksForStudy(): Promise<{ success: boolean; decks?: De
 export async function getStudySessions(): Promise<{ success: boolean; sessions?: StudySession[]; error?: string }> {
   const session = await getServerSession(authOptions);
   
-  // For development: use hardcoded email if no session
-  const userEmail = session?.user?.email || 'devyk100@gmail.com';
-  
-  if (!userEmail) {
+  if (!session?.user?.email) {
     return { success: false, error: "Not authenticated" };
   }
+  
+  const userEmail = session.user.email;
 
   try {
     const user = await prisma.user.findUnique({
@@ -133,12 +131,11 @@ export async function createStudySession(params: CreateStudySessionParams): Prom
   const { deckId, prompt, maxCards } = params;
   const session = await getServerSession(authOptions);
   
-  // For development: use hardcoded email if no session
-  const userEmail = session?.user?.email || 'devyk100@gmail.com';
-  
-  if (!userEmail) {
+  if (!session?.user?.email) {
     return { success: false, error: "Not authenticated" };
   }
+  
+  const userEmail = session.user.email;
 
   try {
     const user = await prisma.user.findUnique({
@@ -233,12 +230,11 @@ export async function getStudySessionCards(sessionId: string): Promise<{
 }> {
   const session = await getServerSession(authOptions);
   
-  // For development: use hardcoded email if no session
-  const userEmail = session?.user?.email || 'devyk100@gmail.com';
-  
-  if (!userEmail) {
+  if (!session?.user?.email) {
     return { success: false, error: "Not authenticated" };
   }
+  
+  const userEmail = session.user.email;
 
   try {
     const user = await prisma.user.findUnique({

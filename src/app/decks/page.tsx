@@ -129,14 +129,44 @@ const DeckList: React.FC<DeckListProps> = ({ decks }) => {
 const DecksPage = async () => {
   try {
     const session = await getServerSession(authOptions);
-    const name = session?.user?.name;
-
-    // For development: use hardcoded email if no session
-    const userEmail = session?.user?.email || 'devyk100@gmail.com';
-    const userName = session?.user?.name || 'Dev User';
-
-    if (!userEmail) {
-      return <div>Please log in to view your decks.</div>;
+    
+    let userEmail: string;
+    let userName: string;
+    
+    // Check if we have a valid session
+    if (session?.user?.email) {
+      userEmail = session.user.email;
+      userName = session.user.name || 'User';
+    } else {
+      // Development fallback - check if demo user exists
+      const demoUser = await prisma.user.findUnique({
+        where: { email: 'devyk100@gmail.com' }
+      });
+      
+      if (demoUser) {
+        userEmail = demoUser.email;
+        userName = demoUser.name || 'Demo User';
+      } else {
+        // No session and no demo user - require authentication
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold mb-4">Authentication Required</h1>
+              <p className="text-muted-foreground mb-6">
+                Please log in to access your flashcard decks.
+              </p>
+              <div className="space-y-2">
+                <Button asChild className="w-full">
+                  <Link href="/login">OAuth Login</Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/dev-login">Development Login</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      }
     }
 
   const currentTime = new Date();
