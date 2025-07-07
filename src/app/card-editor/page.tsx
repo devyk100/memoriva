@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getFlashcardsByDeckId } from "@/actions/get-flashcards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ const CardEditorPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"front" | "back">("front");
 
+  const queryClient = useQueryClient();
+
   const {
     data: flashcardData,
     isLoading,
@@ -32,6 +34,69 @@ const CardEditorPage = () => {
     queryKey: ["flashcards", deckId],
     queryFn: () => getFlashcardsByDeckId(deckId!),
     enabled: !!deckId,
+  });
+
+  // Mock API function to create a new card
+  const createCard = async (deckId: string): Promise<Flashcard> => {
+    console.log("Creating new card for deck:", deckId);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const newCard: Flashcard = {
+      id: `card_${Date.now()}`,
+      front: "",
+      back: "",
+      deckId: deckId
+    };
+    
+    console.log("Card created:", newCard);
+    return newCard;
+  };
+
+  // React Query mutation for creating cards
+  const createCardMutation = useMutation({
+    mutationFn: (deckId: string) => createCard(deckId),
+    onSuccess: (newCard) => {
+      // Update the query cache with the new card
+      queryClient.setQueryData(["flashcards", deckId], (oldData: any) => {
+        if (!oldData) {
+          // For new decks, create initial data structure
+          return {
+            deck: {
+              id: deckId,
+              name: "New Deck",
+              flashcards: [newCard]
+            },
+            totalCards: 1
+          };
+        }
+        
+        return {
+          ...oldData,
+          deck: {
+            ...oldData.deck,
+            flashcards: [...oldData.deck.flashcards, newCard]
+          },
+          totalCards: oldData.totalCards + 1
+        };
+      });
+      
+      // Select the new card and start editing
+      setSelectedCard(newCard);
+      setEditingFront("");
+      setEditingBack("");
+      setIsEditing(true);
+      setActiveTab("front");
+      
+      // Update URL with new card
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set("cardId", newCard.id);
+      window.history.replaceState({}, "", newUrl.toString());
+    },
+    onError: (error) => {
+      console.error("Failed to create card:", error);
+    }
   });
 
   // Set initial card if cardId is provided in URL
@@ -106,24 +171,8 @@ const CardEditorPage = () => {
   const handleCreateNewCard = () => {
     if (!deckId) return;
     
-    // Create a new card for editing
-    const newCard: Flashcard = {
-      id: `card_${Date.now()}`,
-      front: "",
-      back: "",
-      deckId: deckId
-    };
-    
-    setSelectedCard(newCard);
-    setEditingFront("");
-    setEditingBack("");
-    setIsEditing(true);
-    setActiveTab("front");
-    
-    // Update URL with new card
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set("cardId", newCard.id);
-    window.history.replaceState({}, "", newUrl.toString());
+    // Use the React Query mutation to create the card
+    createCardMutation.mutate(deckId);
   };
 
   const handleBackToDeck = () => {
@@ -147,9 +196,11 @@ const CardEditorPage = () => {
 
   // Handle new deck case or error state
   if (error || !flashcardData) {
-    // If it's a new deck (starts with "deck_"), create mock data
+    // If it's a new deck (starts with "deck_"), check React Query cache first
     if (deckId && deckId.startsWith("deck_")) {
-      const mockDeckData = {
+      // Try to get data from React Query cache
+      const cachedData = queryClient.getQueryData(["flashcards", deckId]) as any;
+      const mockDeckData = cachedData || {
         deck: {
           id: deckId,
           name: "New Deck",
@@ -187,21 +238,57 @@ const CardEditorPage = () => {
                   <CardHeader>
                     <CardTitle className="text-lg">Cards</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-                      <div className="p-4 border-b">
-                        <Button 
-                          onClick={handleCreateNewCard}
-                          className="w-full gap-2"
-                          variant="outline"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Create Card
-                        </Button>
-                      </div>
-                      <div className="p-8 text-center text-muted-foreground">
-                        <p>No cards yet. Create your first card!</p>
-                      </div>
+                  <CardContent className="p-0 flex flex-col h-full">
+                    {/* Fixed Create Card Button */}
+                    <div className="p-4 border-b bg-card">
+                      <Button 
+                        onClick={handleCreateNewCard}
+                        className="w-full gap-2"
+                        variant="outline"
+                        disabled={createCardMutation.isPending}
+                      >
+                        <Plus className="w-4 h-4" />
+                        {createCardMutation.isPending ? "Creating..." : "Create Card"}
+                      </Button>
+                    </div>
+                    
+                    {/* Scrollable Card List */}
+                    <div className="flex-1 overflow-y-auto">
+                      {mockDeckData.deck.flashcards.length > 0 ? (
+                        mockDeckData.deck.flashcards.map((card: Flashcard, index: number) => (
+                          <div
+                            key={card.id}
+                            className={cn(
+                              "p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors",
+                              selectedCard?.id === card.id && "bg-muted border-l-4 border-l-primary"
+                            )}
+                            onClick={() => handleCardSelect(card)}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  Card {index + 1}
+                                </span>
+                                {selectedCard?.id === card.id && (
+                                  <div className="w-2 h-2 bg-primary rounded-full" />
+                                )}
+                              </div>
+                              <div 
+                                className="text-sm line-clamp-2"
+                                dangerouslySetInnerHTML={{ 
+                                  __html: selectedCard?.id === card.id && isEditing 
+                                    ? editingFront || "Empty card..." 
+                                    : card.front || "Empty card..."
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          <p>No cards yet. Create your first card!</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -370,18 +457,22 @@ const CardEditorPage = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Cards</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-                  <div className="p-4 border-b">
-                    <Button 
-                      onClick={handleCreateNewCard}
-                      className="w-full gap-2"
-                      variant="outline"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Create Card
-                    </Button>
-                  </div>
+              <CardContent className="p-0 flex flex-col h-full">
+                {/* Fixed Create Card Button */}
+                <div className="p-4 border-b bg-card">
+                  <Button 
+                    onClick={handleCreateNewCard}
+                    className="w-full gap-2"
+                    variant="outline"
+                    disabled={createCardMutation.isPending}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {createCardMutation.isPending ? "Creating..." : "Create Card"}
+                  </Button>
+                </div>
+                
+                {/* Scrollable Card List */}
+                <div className="flex-1 overflow-y-auto">
                   {flashcardData.deck.flashcards.map((card, index) => (
                     <div
                       key={card.id}
@@ -402,7 +493,11 @@ const CardEditorPage = () => {
                         </div>
                         <div 
                           className="text-sm line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: card.front }}
+                          dangerouslySetInnerHTML={{ 
+                            __html: selectedCard?.id === card.id && isEditing 
+                              ? editingFront || "Empty card..." 
+                              : card.front || "Empty card..."
+                          }}
                         />
                       </div>
                     </div>
