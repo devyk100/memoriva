@@ -60,9 +60,8 @@ const CardPageContent = () => {
   const updateCardMutation = useMutation({
     mutationFn: updateCardSRS,
     onSuccess: () => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ["deck", deckId] });
-      queryClient.invalidateQueries({ queryKey: ["nextCards", deckId] });
+      // Don't invalidate queries during study session to prevent re-renders
+      // This will be refreshed when user goes back to decks page
     },
   });
 
