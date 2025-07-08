@@ -4,6 +4,8 @@ import { Button } from "../ui/button"
 import { useCurrentEditor } from "@tiptap/react"
 import { cn } from "@/lib/utils"
 import { ColorPicker } from "./color-picker"
+import { uploadImageLocally, isValidImageFile } from "@/lib/local-image-upload"
+import { useRef } from "react"
 
 import BoldIcon from "../../../public/editorIcons/bold.svg"
 import ItalicIcon from "../../../public/editorIcons/italic.svg"
@@ -26,13 +28,32 @@ import ParagraphIcon from "../../../public/editorIcons/paragraph.svg"
 import ClearIcon from "../../../public/editorIcons/clear.svg"
 import ClearNodeIcon from "../../../public/editorIcons/clear-node.svg"
 import HardbreakIcon from "../../../public/editorIcons/hardbreak.svg"
+import ImageIcon from "../../../public/editorIcons/image.svg"
 
 const MenuBar = ({className}: {
   className:string
 }) => {
   const { editor } = useCurrentEditor()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   if (!editor) {
     return null
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file && isValidImageFile(file)) {
+      try {
+        const imageUrl = await uploadImageLocally(file)
+        editor.chain().focus().setImage({ src: imageUrl }).run()
+      } catch (error) {
+        console.error('Failed to upload image:', error)
+      }
+    }
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -188,6 +209,19 @@ const MenuBar = ({className}: {
           variant={"icon-button"} onClick={() => editor.chain().focus().setHardBreak().run()}>
           <Image alt='hard break' src={HardbreakIcon} height={100} width={100} className='w-[20px] h-[20px]' />
         </Button>
+        <Button
+          variant={"icon-button"} 
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Image alt='upload image' src={ImageIcon} height={100} width={100} className='w-[20px] h-[20px]' />
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          style={{ display: 'none' }}
+        />
         <Button
           variant={"icon-button"}
           onClick={() => editor.chain().focus().undo().run()}

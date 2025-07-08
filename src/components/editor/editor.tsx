@@ -4,10 +4,12 @@ import './styles.scss'
 import { Color } from '@tiptap/extension-color'
 import ListItem from '@tiptap/extension-list-item'
 import TextStyle from '@tiptap/extension-text-style'
+import TiptapImage from '@tiptap/extension-image'
 import { EditorProvider, Node, useCurrentEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import React, { useEffect } from 'react'
 import Image from 'next/image'
+import { uploadImageLocally, isValidImageFile, getImageFromClipboard } from '@/lib/local-image-upload'
 
 
 import { cn } from '@/lib/utils'
@@ -20,6 +22,13 @@ const extensions = [
   Color.configure({ types: [TextStyle.name, ListItem.name] }),
   //@ts-ignore
   TextStyle.configure({ types: [ListItem.name] }),
+  TiptapImage.configure({
+    inline: true,
+    allowBase64: false,
+    HTMLAttributes: {
+      class: 'max-w-full h-auto rounded-lg',
+    },
+  }),
   StarterKit.configure({
     bulletList: {
       keepMarks: true,
@@ -92,13 +101,105 @@ export default ({className, editable, containerClassName, content, onUpdate,menu
   return (
     <>
       <div className={cn("", containerClassName)}>
-        <EditorProvider   autofocus slotBefore={editable ? <MenuBar className={menuBarClassName||""}/>: <></>} immediatelyRender={false}   extensions={extensions} editorProps={{attributes: {
-          class: className||""
-        }}}  editable={editable} content={content} onUpdate={({editor}) => {
-          if(onUpdate){
-            onUpdate(editor.getHTML())
-          }
-        }} 
+        <EditorProvider   
+          autofocus 
+          slotBefore={editable ? <MenuBar className={menuBarClassName||""}/>: <></>} 
+          immediatelyRender={false}   
+          extensions={extensions} 
+          editorProps={{
+            attributes: {
+              class: className||""
+            },
+            handlePaste: (view, event, slice) => {
+              // Handle image paste from clipboard
+              const clipboardData = event.clipboardData;
+              if (!clipboardData) return false;
+
+              const items = Array.from(clipboardData.items);
+              const imageItem = items.find(item => item.type.startsWith('image/'));
+              
+              if (imageItem) {
+                event.preventDefault();
+                
+                const file = imageItem.getAsFile();
+                if (!file || !isValidImageFile(file)) {
+                  return true;
+                }
+                
+                // Insert a placeholder first
+                const { state, dispatch } = view;
+                const pos = state.selection.from;
+                
+                // Create a unique placeholder ID
+                const placeholderId = `uploading-${Date.now()}`;
+                const placeholderText = `[Uploading image ${placeholderId}...]`;
+                
+                const tr = state.tr.insertText(placeholderText, pos);
+                dispatch(tr);
+                
+                // Upload image asynchronously
+                uploadImageLocally(file)
+                  .then((imageUrl: string) => {
+                    // Replace placeholder with actual image
+                    const currentState = view.state;
+                    const doc = currentState.doc;
+                    let found = false;
+                    
+                    doc.descendants((node, pos) => {
+                      if (found) return false;
+                      if (node.isText && node.text?.includes(placeholderText)) {
+                        const from = pos + node.text.indexOf(placeholderText);
+                        const to = from + placeholderText.length;
+                        
+                        const tr = currentState.tr
+                          .delete(from, to)
+                          .insert(from, currentState.schema.nodes.image.create({ 
+                            src: imageUrl,
+                            alt: 'Uploaded image'
+                          }));
+                        
+                        view.dispatch(tr);
+                        found = true;
+                        return false;
+                      }
+                    });
+                  })
+                  .catch((error) => {
+                    console.error('Failed to upload pasted image:', error);
+                    // Replace placeholder with error message
+                    const currentState = view.state;
+                    const doc = currentState.doc;
+                    let found = false;
+                    
+                    doc.descendants((node, pos) => {
+                      if (found) return false;
+                      if (node.isText && node.text?.includes(placeholderText)) {
+                        const from = pos + node.text.indexOf(placeholderText);
+                        const to = from + placeholderText.length;
+                        
+                        const tr = currentState.tr
+                          .delete(from, to)
+                          .insertText('[Image upload failed]', from);
+                        
+                        view.dispatch(tr);
+                        found = true;
+                        return false;
+                      }
+                    });
+                  });
+                
+                return true;
+              }
+              return false; // Let TipTap handle other paste events
+            }
+          }}  
+          editable={editable} 
+          content={content} 
+          onUpdate={({editor}) => {
+            if(onUpdate){
+              onUpdate(editor.getHTML())
+            }
+          }} 
         ></EditorProvider>
       </div>
     </>
