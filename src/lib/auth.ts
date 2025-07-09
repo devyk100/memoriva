@@ -40,6 +40,17 @@ export const authOptions: AuthOptions = {
     signIn: '/login',
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Redirect to /decks after successful OAuth login
+      if (url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/decks`
+      }
+      // Allow relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allow callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) return url
+      return `${baseUrl}/decks`
+    },
     async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {
       if (account && user.email) {
         try {
