@@ -14,7 +14,7 @@ export default function Home() {
             <span className="text-primary">Smart Flashcards</span>
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground mb-8 sm:mb-12 max-w-2xl mx-auto">
-            Boost your learning with spaced repetition, intelligent scheduling, and beautiful flashcards designed to help you remember more.
+            Boost your learning with spaced repetition, intelligent scheduling, and beautiful flashcards designed to help you remember more. Create custom study sessions powered by AI for any topic or strengthen your weak areas with personalized content.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="text-base px-8">
@@ -92,11 +92,11 @@ export default function Home() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle className="text-xl">AI Generated Study Sessions</CardTitle>
+              <CardTitle className="text-xl">RAG-Powered Study Sessions</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-base">
-                Personalized AI-powered study sessions tailored to your learning style, progress, and knowledge gaps.
+                Generate custom study sessions for any topic using advanced RAG technology, or create targeted sessions to strengthen your weak areas and knowledge gaps.
               </CardDescription>
             </CardContent>
           </Card>
