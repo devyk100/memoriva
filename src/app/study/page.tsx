@@ -175,7 +175,7 @@ const StudyPage = () => {
                 <Label htmlFor="prompt">Study Prompt</Label>
                 <Input
                   id="prompt"
-                  placeholder="e.g., help me study my weak cards, focus on cards about Paris"
+                  placeholder="e.g., help me study graphs and trees, focus on my weak cards"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
