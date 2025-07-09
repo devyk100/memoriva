@@ -41,15 +41,35 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Redirect to /decks after successful OAuth login
-      if (url === baseUrl || url === `${baseUrl}/`) {
-        return `${baseUrl}/decks`
+      // Always redirect to /decks after successful sign in
+      console.log('NextAuth redirect callback:', { url, baseUrl });
+      
+      // If redirecting from sign in or root, go to decks
+      if (url === baseUrl || url === `${baseUrl}/` || url.includes('/api/auth/signin')) {
+        console.log('Redirecting to /decks');
+        return `${baseUrl}/decks`;
       }
-      // Allow relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allow callback URLs on the same origin
-      if (new URL(url).origin === baseUrl) return url
-      return `${baseUrl}/decks`
+      
+      // If it's a relative URL, make it absolute and check if it should go to decks
+      if (url.startsWith("/")) {
+        if (url === "/" || url === "/login") {
+          return `${baseUrl}/decks`;
+        }
+        return `${baseUrl}${url}`;
+      }
+      
+      // If it's on the same origin, allow it
+      try {
+        if (new URL(url).origin === baseUrl) {
+          return url;
+        }
+      } catch (e) {
+        // Invalid URL, default to decks
+        return `${baseUrl}/decks`;
+      }
+      
+      // Default fallback to decks
+      return `${baseUrl}/decks`;
     },
     async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile }) {
       if (account && user.email) {

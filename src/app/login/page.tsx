@@ -11,11 +11,11 @@ const LoginPage = () => {
         Log in to access your flashcard decks and start studying.
       </p>
       <div className="flex flex-col space-y-4">
-        <Button onClick={() => signIn("github")}>
+        <Button onClick={() => signIn("github", {callbackUrl: "/decks"})}>
           <Github className="mr-2 h-4 w-4" aria-label="Sign in with Github" />
           Sign in with GitHub
         </Button>
-        <Button onClick={() => signIn("google")}>
+        <Button onClick={() => signIn("google", {callbackUrl: "/decks"})}>
           <Google className="mr-2 h-4 w-4" aria-label="Sign in with Google" />
           Sign in with Google
         </Button>
