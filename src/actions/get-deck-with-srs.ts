@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { QueueManager, SessionManager } from "@/lib/redis";
 import { getCardsForReview, getNewCards, createStudyQueue } from "@/lib/srs";
 

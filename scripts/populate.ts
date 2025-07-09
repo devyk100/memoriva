@@ -12,7 +12,7 @@ async function main() {
     create: {
       email: "devyk100@gmail.com",
       name: "Dev Test User",
-      authType: "google",
+      authType: "GOOGLE",
       image: "https://via.placeholder.com/150",
     },
   });
@@ -23,6 +23,7 @@ async function main() {
   const geographyDeck = await prisma.flashcardDeck.create({
     data: {
       name: "Geography Basics",
+      userId: user.id,
       flashcards: {
         create: [
           {
@@ -56,6 +57,7 @@ async function main() {
   const scienceDeck = await prisma.flashcardDeck.create({
     data: {
       name: "Science Fundamentals",
+      userId: user.id,
       flashcards: {
         create: [
           {
@@ -89,6 +91,7 @@ async function main() {
   const mathDeck = await prisma.flashcardDeck.create({
     data: {
       name: "Mathematics Basics",
+      userId: user.id,
       flashcards: {
         create: [
           {

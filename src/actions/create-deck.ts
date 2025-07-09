@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export interface CreateDeckResult {
   success: boolean;
@@ -31,7 +31,7 @@ export async function createDeck(name: string): Promise<CreateDeckResult> {
         data: {
           email: userEmail,
           name: session?.user?.name || "Dev User",
-          authType: "google", // Default to Google, could be GitHub too
+          authType: "GOOGLE", // Default to Google, could be GitHub too
         },
       });
     }
@@ -40,6 +40,7 @@ export async function createDeck(name: string): Promise<CreateDeckResult> {
     const deck = await prisma.flashcardDeck.create({
       data: {
         name: name.trim(),
+        userId: user.id,
       },
     });
 
