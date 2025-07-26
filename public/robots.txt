@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://memoriva.yashk.dev/sitemap.xml
+
+# Disallow private routes
+Disallow: /api/
+Disallow: /dev-login
