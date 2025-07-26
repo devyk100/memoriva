@@ -4,7 +4,7 @@ import { Button } from "../ui/button"
 import { useCurrentEditor } from "@tiptap/react"
 import { cn } from "@/lib/utils"
 import { ColorPicker } from "./color-picker"
-import { uploadImageLocally, isValidImageFile } from "@/lib/local-image-upload"
+import { uploadImageToS3, isValidImageFile } from "@/lib/image-upload"
 import { useRef } from "react"
 
 import BoldIcon from "../../../public/editorIcons/bold.svg"
@@ -44,7 +44,7 @@ const MenuBar = ({className}: {
     const file = event.target.files?.[0]
     if (file && isValidImageFile(file)) {
       try {
-        const imageUrl = await uploadImageLocally(file)
+        const imageUrl = await uploadImageToS3(file)
         editor.chain().focus().setImage({ src: imageUrl }).run()
       } catch (error) {
         console.error('Failed to upload image:', error)

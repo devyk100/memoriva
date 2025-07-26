@@ -10,11 +10,14 @@ export async function uploadImageToS3(file: File): Promise<string> {
     console.log('Starting image upload for file:', file.name, file.type, file.size);
     
     // Step 1: Get presigned URL from backend
-    const response = await fetch('http://localhost:8080/api/upload/presigned-url', {
+    const backendUrl = process.env.NEXT_PUBLIC_RAG_BACKEND_URL || process.env.RAG_BACKEND_URL || 'http://localhost:8080';
+    const apiKey = process.env.NEXT_PUBLIC_RAG_API_KEY || process.env.RAG_API_KEY || 'memoriva-api-key-2025';
+    
+    const response = await fetch(`${backendUrl}/api/upload/presigned-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': 'memoriva-api-key-2025',
+        'X-API-Key': apiKey,
       },
       body: JSON.stringify({
         contentType: file.type,

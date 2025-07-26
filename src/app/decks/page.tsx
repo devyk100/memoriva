@@ -137,40 +137,25 @@ const DecksPage = async () => {
     let userName: string;
     
     // Check if we have a valid session
-    if (session?.user?.email) {
-      userEmail = session.user.email;
-      userName = session.user.name || 'User';
-    } else {
-      // Development fallback - check if demo user exists
-      const demoUser = await prisma.user.findUnique({
-        where: { email: 'devyk100@gmail.com' }
-      });
-      
-      if (demoUser) {
-        userEmail = demoUser.email;
-        userName = demoUser.name || 'Demo User';
-      } else {
-        // No session and no demo user - require authentication
-        return (
-          <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-2xl font-semibold mb-4">Authentication Required</h1>
-              <p className="text-muted-foreground mb-6">
-                Please log in to access your flashcard decks.
-              </p>
-              <div className="space-y-2">
-                <Button asChild className="w-full">
-                  <Link href="/login">OAuth Login</Link>
-                </Button>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/dev-login">Development Login</Link>
-                </Button>
-              </div>
-            </div>
+    if (!session?.user?.email) {
+      // No session - require authentication
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold mb-4">Authentication Required</h1>
+            <p className="text-muted-foreground mb-6">
+              Please log in to access your flashcard decks.
+            </p>
+            <Button asChild className="w-full">
+              <Link href="/login">Login</Link>
+            </Button>
           </div>
-        );
-      }
+        </div>
+      );
     }
+    
+    userEmail = session.user.email;
+    userName = session.user.name || 'User';
 
   const currentTime = new Date();
   const currentHour = currentTime.getHours();

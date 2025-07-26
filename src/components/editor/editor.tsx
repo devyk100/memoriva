@@ -9,7 +9,7 @@ import { EditorProvider, Node, useCurrentEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import React, { useEffect } from 'react'
 import Image from 'next/image'
-import { uploadImageLocally, isValidImageFile, getImageFromClipboard } from '@/lib/local-image-upload'
+import { uploadImageToS3, isValidImageFile, getImageFromClipboard } from '@/lib/image-upload'
 
 
 import { cn } from '@/lib/utils'
@@ -138,7 +138,7 @@ export default ({className, editable, containerClassName, content, onUpdate,menu
                 dispatch(tr);
                 
                 // Upload image asynchronously
-                uploadImageLocally(file)
+                uploadImageToS3(file)
                   .then((imageUrl: string) => {
                     // Replace placeholder with actual image
                     const currentState = view.state;
